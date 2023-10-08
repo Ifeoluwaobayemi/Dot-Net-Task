@@ -2,6 +2,7 @@
 using Core.Services.Abstraction;
 using Domain.Models;
 using Domain.Repositories.Abstraction;
+using Microsoft.Azure.Cosmos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +13,15 @@ namespace Core.Services.Implementation
 {
     public class ApplicationFormService : IApplicationFormService
     {
+
+        private readonly CosmosClient _cosmosClient;
+        private readonly Container _container;
         private readonly IRepository<ApplicationForm> _repository;
 
-        public ApplicationFormService(IRepository<ApplicationForm> repository)
+        public ApplicationFormService(CosmosClient cosmosClient, string databaseName, string containerName, IRepository<ApplicationForm> repository)
         {
+            _cosmosClient = cosmosClient;
+            _container = _cosmosClient.GetContainer(databaseName, containerName);
             _repository = repository;
         }
 
@@ -51,9 +57,9 @@ namespace Core.Services.Implementation
                 }
             };
 
-            var result = await _repository.AddAsync(appForm);
+            var response = await _container.CreateItemAsync(appForm);
 
-            if (result != null)
+            if (response.StatusCode == System.Net.HttpStatusCode.Created)
             {
                 return true;
             }
@@ -61,31 +67,84 @@ namespace Core.Services.Implementation
             return false;
         }
 
-
         public async Task<bool> DeleteAsync(string id)
         {
-            await _repository.DeleteAsync(id);
-
-            return true;
+            try
+            {
+                await _container.DeleteItemAsync<ApplicationForm>(id, new PartitionKey(id));
+                return true;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
         }
 
         public async Task<IEnumerable<ApplicationForm>> GetAllAsync()
         {
-            var appForm = await _repository.GetAllAsync();
+            var query = new QueryDefinition("SELECT * FROM c");
+            var results = new List<ApplicationForm>();
 
-            return appForm;
+            var iterator = _container.GetItemQueryIterator<ApplicationForm>(query);
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                results.AddRange(response.Resource);
+            }
+
+            return results;
         }
 
         public async Task<ApplicationForm> GetByIdAsync(string id)
         {
-            var appForm = await _repository.GetByIdAsync(id);
-
-            return appForm;
+            try
+            {
+                var response = await _container.ReadItemAsync<ApplicationForm>(id, new PartitionKey(id));
+                return response.Resource;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
         }
 
-        public async Task UpdateAsync(string id, ApplicationForm entity)
+        public async Task<bool> UpdateAsync(string id, ApplicationFormDto updateDto)
         {
-            await _repository.UpdateAsync(id, entity);
+            try
+            {
+                var existingForm = await GetByIdAsync(id);
+
+                if (existingForm == null)
+                {
+                    return false; 
+                }
+
+                
+                existingForm.Image = updateDto.Image;
+                existingForm.PersonalInformation = updateDto.PersonalInformation;
+                existingForm.Profile = updateDto.Profile;
+                existingForm.AdditionalQuestions = updateDto.AdditionalQuestions;
+
+                
+                var response = await _container.ReplaceItemAsync(existingForm, existingForm.Id);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false; 
+                }
+            }
+            catch (CosmosException ex)
+            {
+                
+                Console.WriteLine($"Cosmos DB Exception: {ex}");
+                return false;
+            }
         }
+
     }
 }

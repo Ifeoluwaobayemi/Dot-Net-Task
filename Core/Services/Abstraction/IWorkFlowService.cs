@@ -13,7 +13,7 @@ namespace Core.Services.Abstraction
         Task<IEnumerable<WorkFlow>> GetAllAsync();
         Task<WorkFlow> GetByIdAsync(string id);
         Task<bool> AddAsync(WorkFlowDto entity);
-        Task<bool> UpdateAsync(string id, WorkFlow entity);
+        Task<bool> UpdateAsync(string id, WorkFlowDto updateDto);
         Task<bool> DeleteAsync(string id);
     }
 }

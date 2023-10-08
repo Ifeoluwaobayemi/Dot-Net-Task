@@ -1,4 +1,5 @@
-﻿using Core.Services.Abstraction;
+﻿using Core.DTOs;
+using Core.Services.Abstraction;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,6 +38,27 @@ namespace DotNetTask.Controllers
                 return NotFound("WorkFlow not found");
             }
             return Ok(workFlows);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateWorkFlow(string id, [FromBody] WorkFlowDto updateDto)
+        {
+            var existingWorkFlow = await _workFlowService.GetByIdAsync(id);
+            if (existingWorkFlow == null)
+            {
+                return NotFound($"WorkFlow with ID {id} not found.");
+            }
+
+            var updated = await _workFlowService.UpdateAsync(id, updateDto);
+
+            if (updated)
+            {
+                return Ok("WorkFlow updated successfully.");
+            }
+            else
+            {
+                return BadRequest("Failed to update WorkFlow.");
+            }
         }
     }
 }

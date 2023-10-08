@@ -1,5 +1,6 @@
 ﻿using Core.DTOs;
 using Core.Services.Abstraction;
+using Core.Services.Implementation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,6 +60,18 @@ namespace DotNetTask.Controllers
                 return NotFound("Programs not found");
             }
             return Ok(programDetails);
+        }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProgram(string id, [FromBody] ProgramDto updateModel)
+        {
+            var updated = await _programService.UpdateAsync(id, updateModel);
+
+            if (updated)
+            {
+                return Ok("Program updated successfully.");
+            }
+
+            return NotFound($"Program with ID {id} not found.");
         }
 
     }

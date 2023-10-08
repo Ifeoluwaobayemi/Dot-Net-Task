@@ -1,4 +1,5 @@
-﻿using Core.Services.Abstraction;
+﻿using Core.DTOs;
+using Core.Services.Abstraction;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -40,6 +41,18 @@ namespace DotNetTask.Controllers
             return Ok(appForms);
         }
 
-        
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateApplicationForm(string id, [FromBody] ApplicationFormDto updateModel)
+        {
+            var updated = await _applicationFormService.UpdateAsync(id, updateModel);
+
+            if (updated)
+            {
+                return Ok("Application Form updated successfully.");
+            }
+
+            return NotFound($"Application Form with ID {id} not found.");
+        }
+
     }
 }

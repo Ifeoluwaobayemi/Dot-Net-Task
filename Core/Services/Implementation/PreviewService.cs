@@ -2,6 +2,7 @@
 using Core.Services.Abstraction;
 using Domain.Models;
 using Domain.Repositories.Abstraction;
+using Microsoft.Azure.Cosmos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +13,19 @@ namespace Core.Services.Implementation
 {
     public class PreviewService : IPreviewService
     {
+        private readonly CosmosClient _cosmosClient;
+        private readonly Container _container;
         private readonly IRepository<Preview> _repository;
-        public PreviewService(IRepository<Preview> repository)
+
+        public PreviewService(CosmosClient cosmosClient, string databaseName, string containerName, IRepository<Preview> repository)
         {
+            _cosmosClient = cosmosClient;
+            _container = _cosmosClient.GetContainer(databaseName, containerName);
             _repository = repository;
         }
 
-
         public async Task<bool> AddAsync(PreviewDto entity)
         {
-
             var preview = new Preview
             {
                 Title = entity.Title,
@@ -43,42 +47,61 @@ namespace Core.Services.Implementation
                     Qualification = entity.ProgramInformation.Qualification
                 }
             };
-            var result = await _repository.AddAsync(preview);
 
-            if (result != null)
+            var response = await _container.CreateItemAsync(preview);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Created)
             {
                 return true;
             }
 
             return false;
-
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            await _repository.DeleteAsync(id);
+            var response = await _container.DeleteItemAsync<Preview>(id, new PartitionKey(id));
 
-            return true;
+            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public async Task<IEnumerable<Preview>> GetAllAsync()
         {
-            var preview = await _repository.GetAllAsync();
+            var query = new QueryDefinition("SELECT * FROM c");
+            var previews = new List<Preview>();
 
-            return preview;
+            var iterator = _container.GetItemQueryIterator<Preview>(query);
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                previews.AddRange(response);
+            }
+
+            return previews;
         }
 
         public async Task<Preview> GetByIdAsync(string id)
         {
-            var preview = await _repository.GetByIdAsync(id);
-
-            return preview;
+            try
+            {
+                var response = await _container.ReadItemAsync<Preview>(id, new PartitionKey(id));
+                return response.Resource;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
         }
 
         public async Task UpdateAsync(string id, Preview entity)
         {
-            await _repository.UpdateAsync(id, entity);
+            await _container.ReplaceItemAsync(entity, id, new PartitionKey(id));
         }
-
     }
 }

@@ -13,7 +13,7 @@ namespace Core.Services.Abstraction
         Task<IEnumerable<ApplicationForm>> GetAllAsync();
         Task<ApplicationForm> GetByIdAsync(string id);
         Task<bool> AddAsync(ApplicationFormDto entity);
-        Task UpdateAsync(string id, ApplicationForm entity);
+        Task<bool> UpdateAsync(string id, ApplicationFormDto updateDto);
         Task<bool> DeleteAsync(string id);
     }
 }
