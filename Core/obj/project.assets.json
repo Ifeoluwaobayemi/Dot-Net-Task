@@ -76,7 +76,7 @@
           "lib/netstandard2.0/Microsoft.Azure.Cosmos.Serialization.HybridRow.dll": {}
         },
         "build": {
-          "build/netstandard2.0/_._": {}
+          "build/netstandard2.0/Microsoft.Azure.Cosmos.targets": {}
         },
         "runtimeTargets": {
           "runtimes/win-x64/native/Cosmos.CRTCompat.dll": {
@@ -6353,7 +6353,8 @@
   "projectFileDependencyGroups": {
     "net6.0": [
       "Domain >= 1.0.0",
-      "Microsoft.AspNetCore.Http.Features >= 5.0.17"
+      "Microsoft.AspNetCore.Http.Features >= 5.0.17",
+      "Microsoft.Azure.Cosmos >= 3.35.4"
     ]
   },
   "packageFolders": {
@@ -6408,6 +6409,10 @@
           "Microsoft.AspNetCore.Http.Features": {
             "target": "Package",
             "version": "[5.0.17, )"
+          },
+          "Microsoft.Azure.Cosmos": {
+            "target": "Package",
+            "version": "[3.35.4, )"
           }
         },
         "imports": [

@@ -1981,7 +1981,8 @@
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
           "Domain": "1.0.0",
-          "Microsoft.AspNetCore.Http.Features": "5.0.17"
+          "Microsoft.AspNetCore.Http.Features": "5.0.17",
+          "Microsoft.Azure.Cosmos": "3.35.4"
         },
         "compile": {
           "bin/placeholder/Core.dll": {}
